@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>2048 – Leaderboard Edition</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            :root {
+                --cell-size: min(22vw, 80px);
+                --gap-size: min(2.5vw, 10px);
+            }
+            body {
+                font-family: Arial, sans-serif;
+                background: #faf8ef;
+                margin: 0;
+                padding-bottom: 80px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            header {
+                width: 100%;
+                background: #4caf50;
+                color: white;
+                padding: 10px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                box-sizing: border-box;
+            }
+            .scoreboard {
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            .scoreboard div {
+                font-weight: bold;
+            }
+            .nav-buttons button {
+                margin-left: 10px;
+                padding: 6px 12px;
+                font-weight: bold;
+                border: none;
+                background: #333;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .board {
+                display: grid;
+                grid-template-columns: repeat(4, var(--cell-size));
+                grid-template-rows: repeat(4, var(--cell-size));
+                gap: var(--gap-size);
+                background-color: #bbada0;
+                padding: var(--gap-size);
+                border-radius: 10px;
+                margin-top: 20px;
+            }
+            .cell {
+                width: var(--cell-size);
+                height: var(--cell-size);
+                background: #cdc1b4;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: calc(var(--cell-size) / 2.5);
+                font-weight: bold;
+                border-radius: 5px;
+                color: #333;
+            }
+            .cell[data-value="0"] {
+                background: #eee4da;
+                color: transparent;
+            }
+            .cell[data-value="2"] {
+                background: #eee4da;
+            }
+            .cell[data-value="4"] {
+                background: #ede0c8;
+            }
+            .cell[data-value="8"] {
+                background: #f2b179;
+                color: white;
+            }
+            .cell[data-value="16"] {
+                background: #f59563;
+                color: white;
+            }
+            .cell[data-value="32"] {
+                background: #f67c5f;
+                color: white;
+            }
+            .cell[data-value="64"] {
+                background: #f65e3b;
+                color: white;
+            }
+            .cell[data-value="128"] {
+                background: #edcf72;
+            }
+            .cell[data-value="256"] {
+                background: #edcc61;
+            }
+            .cell[data-value="512"] {
+                background: #edc850;
+            }
+            .cell[data-value="1024"] {
+                background: #edc53f;
+            }
+            .cell[data-value="2048"] {
+                background: #edc22e;
+            }
+
+            .leaderboard {
+                display: none;
+                margin-top: 20px;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            }
+
+            footer {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                background: #f0f0f0;
+                text-align: center;
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+            footer a {
+                color: #4caf50;
+                font-weight: bold;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div style="font-size: 1.2rem; font-weight: bold">
+                2048 by rh3xp
+            </div>
+            <div class="nav-buttons">
+                <button onclick="init()">New Game</button>
+                <button onclick="showLeaderboard()">Leaderboard</button>
+                <button onclick="toggleAbout()">About</button>
+            </div>
+        </header>
+
+        <div id="playerStats" style="margin: 15px 0; text-align: center">
+            <div id="playerName">Player: -</div>
+            <div id="score">Score: 0</div>
+            <div id="highScore">High: 0</div>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="leaderboard" id="leaderboard">
+            <h2>🏆 Top 3 Players</h2>
+            <ol id="topList"></ol>
+        </div>
+
+        <div
+            id="aboutModal"
+            style="
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                color: #000;
+                z-index: 1000;
+            "
+        >
+            <div
+                style="
+                    background: #fff;
+                    max-width: 500px;
+                    margin: 50px auto;
+                    padding: 20px;
+                    border-radius: 8px;
+                    position: relative;
+                "
+            >
+                <button
+                    onclick="toggleAbout()"
+                    style="
+                        position: absolute;
+                        top: 10px;
+                        right: 15px;
+                        background: #f44336;
+                        color: white;
+                        border: none;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    "
+                >
+                    ✖
+                </button>
+                <h2>About This Project</h2>
+                <p>
+                    <strong>Parth Krishna</strong> (aka <code>rh3xp</code>) is a
+                    curious rabbit-hole explorer who loves building creative
+                    tech experiments. With a knack for automation and a love for
+                    elegant simplicity, he finds ways to turn low-resource
+                    environments into powerful playgrounds.
+                </p>
+                <p>
+                    This game was developed with guidance from ChatGPT, and it’s
+                    hosted uniquely on a <strong>Bolt IoT WiFi chip</strong> –
+                    no backend, no servers, just HTML/JS magic served straight
+                    from hardware.
+                </p>
+                <p>
+                    🧠 It's more than a game — it's proof that with a little
+                    curiosity, even a tiny IoT chip can become a retro arcade.
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            Made with GPT 🤖 by
+            <a href="https://github.com/rh3xp" target="_blank">rh3xp</a>
+        </footer>
+
+        <script>
+            const board = Array(16).fill(0);
+            let score = 0;
+            let player = localStorage.getItem("name") || "";
+
+            // Ask for player name if not set
+            if (!player) {
+                player = prompt("Enter your name:");
+                localStorage.setItem("name", player);
+            }
+
+            // Set elements
+            const boardEl = document.getElementById("board");
+            const scoreEl = document.getElementById("score");
+            const highScoreEl = document.getElementById("highScore");
+            const playerNameEl = document.getElementById("playerName");
+            const leaderboardEl = document.getElementById("leaderboard");
+            const topListEl = document.getElementById("topList");
+
+            function drawBoard() {
+                boardEl.innerHTML = "";
+                for (let i = 0; i < 16; i++) {
+                    const cell = document.createElement("div");
+                    cell.className = "cell";
+                    cell.dataset.value = board[i];
+                    cell.textContent = board[i] !== 0 ? board[i] : "";
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            function addTile() {
+                let empty = board
+                    .map((v, i) => (v === 0 ? i : -1))
+                    .filter((i) => i !== -1);
+                if (empty.length === 0) return;
+                let idx = empty[Math.floor(Math.random() * empty.length)];
+                board[idx] = Math.random() < 0.9 ? 2 : 4;
+            }
+
+            function updateScores() {
+                scoreEl.textContent = "Score: " + score;
+                playerNameEl.textContent = "Player: " + player;
+                let high = localStorage.getItem("highScore_" + player) || 0;
+                if (score > high) {
+                    localStorage.setItem("highScore_" + player, score);
+                    high = score;
+                }
+                highScoreEl.textContent = "High: " + high;
+            }
+
+            function getIdx(x, y) {
+                return y * 4 + x;
+            }
+
+            function slide(row) {
+                let arr = row.filter((x) => x);
+                for (let i = 0; i < arr.length - 1; i++) {
+                    if (arr[i] === arr[i + 1]) {
+                        arr[i] *= 2;
+                        score += arr[i];
+                        arr[i + 1] = 0;
+                    }
+                }
+                return arr
+                    .filter((x) => x)
+                    .concat(new Array(4 - arr.filter((x) => x).length).fill(0));
+            }
+
+            function move(dir) {
+                let moved = false;
+
+                for (let y = 0; y < 4; y++) {
+                    let row = [];
+                    for (let x = 0; x < 4; x++) {
+                        if (dir === "left") row.push(board[getIdx(x, y)]);
+                        if (dir === "right") row.push(board[getIdx(3 - x, y)]);
+                        if (dir === "up") row.push(board[getIdx(y, x)]);
+                        if (dir === "down") row.push(board[getIdx(y, 3 - x)]);
+                    }
+
+                    let newRow = slide(row);
+                    for (let x = 0; x < 4; x++) {
+                        let val = newRow[x];
+                        let idx;
+                        if (dir === "left") idx = getIdx(x, y);
+                        if (dir === "right") idx = getIdx(3 - x, y);
+                        if (dir === "up") idx = getIdx(y, x);
+                        if (dir === "down") idx = getIdx(y, 3 - x);
+                        if (board[idx] !== val) {
+                            board[idx] = val;
+                            moved = true;
+                        }
+                    }
+                }
+
+                if (moved) {
+                    addTile();
+                    drawBoard();
+                    updateScores();
+                    if (!hasMoves()) {
+                        saveToLeaderboard();
+                        setTimeout(() => alert("Game Over!"), 100);
+                    }
+                }
+            }
+
+            function hasMoves() {
+                for (let i = 0; i < 16; i++) {
+                    if (board[i] === 0) return true;
+                    if (i % 4 !== 3 && board[i] === board[i + 1]) return true;
+                    if (i < 12 && board[i] === board[i + 4]) return true;
+                }
+                return false;
+            }
+
+            function saveToLeaderboard() {
+                const lb = JSON.parse(
+                    localStorage.getItem("leaderboard") || "[]",
+                );
+                lb.push({ name: player, score: score });
+                lb.sort((a, b) => b.score - a.score);
+                localStorage.setItem(
+                    "leaderboard",
+                    JSON.stringify(lb.slice(0, 3)),
+                );
+            }
+
+            function showLeaderboard() {
+                boardEl.style.display = "none";
+                leaderboardEl.style.display = "block";
+                const lb = JSON.parse(
+                    localStorage.getItem("leaderboard") || "[]",
+                );
+                topListEl.innerHTML = lb
+                    .map((p) => `<li>${p.name}: ${p.score}</li>`)
+                    .join("");
+            }
+
+            function init() {
+                board.fill(0);
+                score = 0;
+                boardEl.style.display = "grid";
+                leaderboardEl.style.display = "none";
+                addTile();
+                addTile();
+                drawBoard();
+                updateScores();
+            }
+
+            function toggleAbout() {
+                const modal = document.getElementById("aboutModal");
+                modal.style.display =
+                    modal.style.display === "none" ? "block" : "none";
+            }
+
+            document.addEventListener("keydown", (e) => {
+                switch (e.key) {
+                    case "ArrowLeft":
+                        move("left");
+                        break;
+                    case "ArrowRight":
+                        move("right");
+                        break;
+                    case "ArrowUp":
+                        move("up");
+                        break;
+                    case "ArrowDown":
+                        move("down");
+                        break;
+                }
+            });
+
+            // Swipe support for mobile
+            let sx = 0,
+                sy = 0;
+            document.addEventListener("touchstart", (e) => {
+                sx = e.touches[0].clientX;
+                sy = e.touches[0].clientY;
+            });
+            document.addEventListener("touchend", (e) => {
+                const dx = e.changedTouches[0].clientX - sx;
+                const dy = e.changedTouches[0].clientY - sy;
+                if (Math.abs(dx) > Math.abs(dy))
+                    move(dx > 0 ? "right" : "left");
+                else move(dy > 0 ? "down" : "up");
+            });
+
+            init();
+        </script>
+    </body>
+</html>
